@@ -66,11 +66,6 @@ function sendMqttMessage(topic, payload) {
     console.log(`Odesláno do [${topic}]: ${payload}`);
 }
 
-// Funkce pro tlačítka v HTML
-function odeslatZpravu(zprava) {
-    sendMqttMessage(MQTT_TOPIC_CMD, zprava);
-}
-
 // --- LOGIKA MŘÍŽKY ---
 function createGrid() {
     const grid = document.getElementById('pixel-grid');
