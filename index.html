@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>web-client</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+</head>
+<body>
+
+    <div class="wrapper">
+        <nav class="sidebar">
+            <div class="logo">web-client</div>
+            <ul>
+                <li><a href="index.html" class="active">Domů</a></li>
+                <li><a href="">O nás</a></li>
+                <li><a href="">Kontakt</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <header>
+                <h1>Vítejte na hlavní stránce</h1>
+                <p class="subtitle">Jednoduchý design s postranním panelem</p>
+            </header>
+            
+            <section class="card">
+                <h2>Zap/Vyp</h2>
+                    <div id="status">Stav: Připojuji se...</div>
+
+                    <button onclick="odeslatZpravu('ON')">ZAPNOUT</button>
+                    <button onclick="odeslatZpravu('OFF')">VYPNOUT</button>
+
+                    <script>
+                        // --- NASTAVENÍ (DOPLŇ SVOJE ÚDAJE Z HIVEMQ) ---
+                        const MQTT_HOST = ""; // Bez 'wss://' na začátku
+                        const MQTT_PORT = 8884; // Pro web musí být 8884 (WebSocket SSL)
+                        const MQTT_USER = "web-client"; // Jméno z Access Management
+                        const MQTT_PASS = ""; 
+                        const MQTT_TOPIC = "light";
+                    
+                        // Vytvoření unikátního ID klienta (aby se nehádal s Picem)
+                        const clientID = "web_client_" + new Date().getTime();
+                    
+                        // Inicializace klienta
+                        const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientID);
+                    
+                        // Funkce co se stane po úspěšném připojení
+                        function onConnect() {
+                            console.log("Připojeno k MQTT Brokeru");
+                            document.getElementById("status").innerText = "Stav: PŘIPOJENO (Online)";
+                            document.getElementById("status").style.color = "green";
+                        }
+                    
+                        // Funkce co se stane při chybě připojení
+                        function onFailure(message) {
+                            console.log("Chyba připojení: " + message.errorMessage);
+                            document.getElementById("status").innerText = "Stav: CHYBA PŘIPOJENÍ";
+                            document.getElementById("status").style.color = "red";
+                        }
+                    
+                        // Funkce pro odeslání zprávy (volaná tlačítkem)
+                        function odeslatZpravu(zprava) {
+                            if (!client.isConnected()) {
+                                alert("Nejsem připojen k serveru!");
+                                return;
+                            }
+
+                            message = new Paho.MQTT.Message(zprava);
+                            message.destinationName = MQTT_TOPIC;
+                            client.send(message);
+                            console.log("Odesláno: " + zprava);
+                        }
+                    
+                        // Nastavení připojení (povinné SSL pro HiveMQ Cloud)
+                        const options = {
+                            useSSL: true,
+                            userName: MQTT_USER,
+                            password: MQTT_PASS,
+                            onSuccess: onConnect,
+                            onFailure: onFailure
+                        };
+                    
+                        // Pokus o připojení hned po načtení stránky
+                        client.connect(options);
+                    
+                    </script>
+            </section>
+
+            <section class="card">
+                <h2>Další sekce</h2>
+                <p>Zde můžete přidat další texty, obrázky nebo jakýkoliv jiný obsah. Design je stavěný tak, aby byl přehledný a vzdušný.</p>
+            </section>
+        </main>
+    </div>
+
+</body>
+</html>

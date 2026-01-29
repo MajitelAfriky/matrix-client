@@ -1,0 +1,114 @@
+/* Základní nastavení a reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Hlavní kontejner - Flexbox pro rozložení vedle sebe */
+.wrapper {
+    display: flex;
+    min-height: 100vh; /* Roztažení na celou výšku okna */
+}
+
+/* --- Postranní panel --- */
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: #ecf0f1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    flex-shrink: 0; /* Zabrání zmenšování panelu */
+}
+
+.sidebar .logo {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li a {
+    display: block;
+    padding: 15px 25px;
+    color: #bdc3c7;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+/* Efekt při najetí myší a aktivní odkaz */
+.sidebar ul li a:hover,
+.sidebar ul li a.active {
+    background-color: #34495e;
+    color: #fff;
+    border-left-color: #3498db;
+}
+
+/* --- Hlavní obsah --- */
+.content {
+    flex: 1; /* Zabere zbytek šířky */
+    padding: 40px;
+}
+
+header {
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 20px;
+}
+
+h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #7f8c8d;
+    font-size: 1.1em;
+}
+
+/* Styl pro karty s obsahem */
+.card {
+    background: #fff;
+    padding: 25px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+h2 {
+    color: #2980b9;
+    margin-bottom: 15px;
+}
+
+/* Jednoduchá responzivita pro mobily */
+@media (max-width: 768px) {
+    .wrapper {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+    }
+    .sidebar ul li a {
+        text-align: center;
+        border-left: none;
+        border-bottom: 4px solid transparent;
+    }
+    .sidebar ul li a:hover {
+        border-bottom-color: #3498db;
+    }
+}
