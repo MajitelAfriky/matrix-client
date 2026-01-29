@@ -112,3 +112,38 @@ h2 {
         border-bottom-color: #3498db;
     }
 }
+/* --- Styl pro mřížku 8x8 --- */
+.grid-container {
+    display: grid;
+    /* 8 sloupců, každý 40px (nebo méně na mobilech) */
+    grid-template-columns: repeat(8, 40px); 
+    grid-template-rows: repeat(8, 40px);
+    gap: 2px; /* Mezera mezi pixely */
+    background-color: #333; /* Barva pozadí mřížky (spáry) */
+    width: fit-content; /* Aby se mřížka neroztahovala */
+    padding: 2px;
+    border-radius: 4px;
+    /* Zamezení výběru textu při kreslení */
+    user-select: none; 
+}
+
+.pixel-cell {
+    background-color: #eee; /* Výchozí barva zhasnutého pixelu */
+    cursor: pointer;
+    transition: background-color 0.1s;
+}
+
+.pixel-cell:hover {
+    border: 1px solid #888; /* Zvýraznění pod myší */
+}
+
+/* Úprava pro malé displeje, aby se mřížka vešla */
+@media (max-width: 500px) {
+    .grid-container {
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 30px); /* Menší čtverečky */
+        width: 100%;
+        max-width: 300px;
+    }
+}
+

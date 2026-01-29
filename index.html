@@ -21,79 +21,36 @@
 
         <main class="content">
             <header>
-                <h1>Vítejte na hlavní stránce</h1>
-                <p class="subtitle">Jednoduchý design s postranním panelem</p>
+                <h1>Ovládací panel</h1>
+                <div id="status" style="margin-bottom: 10px; font-weight: bold;">Stav: Připojuji se...</div>
             </header>
             
             <section class="card">
-                <h2>Zap/Vyp</h2>
-                    <div id="status">Stav: Připojuji se...</div>
-
-                    <button onclick="odeslatZpravu('ON')">ZAPNOUT</button>
-                    <button onclick="odeslatZpravu('OFF')">VYPNOUT</button>
-
-                    <script>
-                        // --- NASTAVENÍ (DOPLŇ SVOJE ÚDAJE Z HIVEMQ) ---
-                        const MQTT_HOST = "6b21f01c6a0e4cc08a8ae8d7acbcecb5.s1.eu.hivemq.cloud"; // Bez 'wss://' na začátku
-                        const MQTT_PORT = 8884; // Pro web musí být 8884 (WebSocket SSL)
-                        const MQTT_USER = "web-client"; // Jméno z Access Management
-                        const MQTT_PASS = "Lolopolo123"; 
-                        const MQTT_TOPIC = "light";
-                    
-                        // Vytvoření unikátního ID klienta (aby se nehádal s Picem)
-                        const clientID = "web_client_" + new Date().getTime();
-                    
-                        // Inicializace klienta
-                        const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientID);
-                    
-                        // Funkce co se stane po úspěšném připojení
-                        function onConnect() {
-                            console.log("Připojeno k MQTT Brokeru");
-                            document.getElementById("status").innerText = "Stav: PŘIPOJENO (Online)";
-                            document.getElementById("status").style.color = "green";
-                        }
-                    
-                        // Funkce co se stane při chybě připojení
-                        function onFailure(message) {
-                            console.log("Chyba připojení: " + message.errorMessage);
-                            document.getElementById("status").innerText = "Stav: CHYBA PŘIPOJENÍ";
-                            document.getElementById("status").style.color = "red";
-                        }
-                    
-                        // Funkce pro odeslání zprávy (volaná tlačítkem)
-                        function odeslatZpravu(zprava) {
-                            if (!client.isConnected()) {
-                                alert("Nejsem připojen k serveru!");
-                                return;
-                            }
-
-                            message = new Paho.MQTT.Message(zprava);
-                            message.destinationName = MQTT_TOPIC;
-                            client.send(message);
-                            console.log("Odesláno: " + zprava);
-                        }
-                    
-                        // Nastavení připojení (povinné SSL pro HiveMQ Cloud)
-                        const options = {
-                            useSSL: true,
-                            userName: MQTT_USER,
-                            password: MQTT_PASS,
-                            onSuccess: onConnect,
-                            onFailure: onFailure
-                        };
-                    
-                        // Pokus o připojení hned po načtení stránky
-                        client.connect(options);
-                    
-                    </script>
+                <h2>Hlavní vypínač</h2>
+                <button onclick="odeslatZpravu('ON')">ZAPNOUT</button>
+                <button onclick="odeslatZpravu('OFF')">VYPNOUT</button>
             </section>
 
             <section class="card">
-                <h2>Další sekce</h2>
-                <p>Zde můžete přidat další texty, obrázky nebo jakýkoliv jiný obsah. Design je stavěný tak, aby byl přehledný a vzdušný.</p>
+                <h2>Kreslení pixelů</h2>
+
+                <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                    <label for="colorPicker">Barva:</label>
+                    <input type="color" id="colorPicker" value="#ff0000">
+
+                    <button onclick="clearGrid()" style="padding: 5px 15px; font-size: 14px; background-color: #e74c3c; color: white; border: none; border-radius: 4px;">
+                        VYČISTIT MŘÍŽKU
+                    </button>
+                </div>
+
+                <div id="pixel-grid" class="grid-container"></div>
+
+                <p style="font-size: 0.8em; color: #777; margin-top: 5px;">Táhlým pohybem myši kreslíš.</p>
             </section>
         </main>
     </div>
+
+    <script src="mqttl.js"></script>
 
 </body>
 </html>
