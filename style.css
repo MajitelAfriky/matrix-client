@@ -37,6 +37,11 @@ body {
     letter-spacing: 1px;
 }
 
+.logo a {
+    color: #ecf0f1;
+    text-decoration: none;
+}
+
 .sidebar ul {
     list-style: none;
 }
