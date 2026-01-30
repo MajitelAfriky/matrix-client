@@ -55,15 +55,13 @@ function onFailure(message) {
     }
 }
 
-function sendMqttMessage(topic, payload) {
-    if (!client.isConnected()) {
-        console.log("MQTT není připojeno, zpráva neodeslána:", payload);
-        return;
-    }
-    const message = new Paho.MQTT.Message(payload);
+function sendMqttBinary(topic, buffer) {
+    if (!client.isConnected()) return;
+
+    // Paho MQTT pozná, že mu dáváš buffer (ArrayBuffer/TypedArray)
+    const message = new Paho.MQTT.Message(buffer);
     message.destinationName = topic;
     client.send(message); 
-    console.log(`Odesláno do [${topic}]: ${payload}`);
 }
 
 // --- LOGIKA MŘÍŽKY ---
@@ -106,19 +104,19 @@ function createGrid() {
 }
 
 function paintCell(cell) {
-    const colorPicker = document.getElementById('colorPicker');
-    const colorInput = colorPicker ? colorPicker.value : "#ff0000";
+    const colorInput = document.getElementById('colorPicker').value;
     const rgb = hexToRgb(colorInput);
     
-    // Obarvení v prohlížeči
-    cell.style.backgroundColor = colorInput;
+    // Získáme souřadnice jako čísla (ne stringy!)
+    const x = parseInt(cell.dataset.x);
+    const y = parseInt(cell.dataset.y);
 
-    // Odeslání dat: "x y r g b"
-    const x = cell.dataset.x;
-    const y = cell.dataset.y;
-    const payload = `${x} ${y} ${rgb.r} ${rgb.g} ${rgb.b}`;
+    // Vytvoříme binární pole o velikosti 5 bajtů
+    // Pořadí: [X, Y, R, G, B]
+    const payload = new Uint8Array([x, y, rgb.r, rgb.g, rgb.b]);
 
-    sendMqttMessage(MQTT_TOPIC_GRID, payload);
+    // Odeslání
+    sendMqttBinary(MQTT_TOPIC_GRID, payload);
 }
 
 function hexToRgb(hex) {
@@ -133,15 +131,76 @@ function hexToRgb(hex) {
 
 // Funkce pro vyčištění mřížky
 function clearGrid() {
-    // 1. Odeslání speciálního příkazu "255" do tématu mřížky
-    sendMqttMessage(MQTT_TOPIC_GRID, "255");
+    // Pro clear pošleme jen jeden bajt s hodnotou 255
+    const payload = new Uint8Array([255]);
     
-    // 2. Vizuální vyčištění mřížky na webu (optimistický update)
-    // Projdeme všechny buňky a nastavíme jim zpět šedou barvu
-    const cells = document.querySelectorAll('.pixel-cell');
-    cells.forEach(cell => {
-        cell.style.backgroundColor = '#eee'; // Barva prázdné buňky (musí sedět s CSS)
-    });
+    // ... vizuální reset buněk ...
     
-    console.log("Mřížka vyčištěna.");
+    sendMqttBinary(MQTT_TOPIC_GRID, payload);
+}
+// --- script.js ---
+
+// 1. Upravíme existující funkci sendMqttMessage
+// (Najdi ji v kódu a nahraď ji touto verzí)
+function sendMqttMessage(topic, payload) {
+    if (!client.isConnected()) {
+        console.log("MQTT není připojeno, zpráva neodeslána");
+        updateStatus("Chyba: Nepřipojeno!", "red");
+        return;
+    }
+
+    // Odeslání MQTT
+    const message = new Paho.MQTT.Message(payload);
+    message.destinationName = topic;
+    client.send(message); 
+    
+    // NOVÉ: Zavolání logování do HTML
+    logToConsole(payload);
+}
+
+// 2. Přidáme novou funkci pro formátování a výpis
+function logToConsole(payload) {
+    const consoleBox = document.getElementById('console-log');
+    if (!consoleBox) return;
+
+    // Odstraníme placeholder "Zatím žádná data...", pokud tam je
+    const placeholder = consoleBox.querySelector('.log-placeholder');
+    if (placeholder) placeholder.remove();
+
+    // Zjistíme aktuální čas
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString();
+
+    // Převedeme binární payload na čitelný text
+    // Pokud je to Uint8Array (což u pixelů je), převedeme na pole čísel [0, 0, 255...]
+    let dataDisplay = "";
+    if (payload instanceof Uint8Array || payload instanceof ArrayBuffer) {
+        // Magie: převedeme bajty na seznam čísel oddělený čárkou
+        const bytes = new Uint8Array(payload);
+        dataDisplay = "[" + Array.from(bytes).join(", ") + "]";
+        
+        // Pokud je to pixel (5 bajtů), můžeme přidat vysvětlivku
+        if (bytes.length === 5) {
+            dataDisplay += ` (X:${bytes[0]} Y:${bytes[1]} RGB)`;
+        } else if (bytes.length === 1 && bytes[0] === 255) {
+            dataDisplay += " (CLEAR)";
+        }
+    } else {
+        // Pokud bys náhodou poslal text
+        dataDisplay = payload.toString();
+    }
+
+    // Vytvoříme HTML element pro řádek
+    const entry = document.createElement('div');
+    entry.classList.add('log-entry');
+    entry.innerHTML = `<span class="log-time">${timeStr}</span> <span class="log-data">${dataDisplay}</span>`;
+
+    // Přidáme na začátek (nejnovější nahoře)
+    consoleBox.prepend(entry);
+}
+
+// 3. Funkce pro tlačítko "Smazat log"
+function clearLog() {
+    const consoleBox = document.getElementById('console-log');
+    consoleBox.innerHTML = '<div class="log-placeholder">Log vymazán...</div>';
 }
