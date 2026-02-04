@@ -1,4 +1,5 @@
 // --- KONFIGURACE MQTT ---
+// Ujisti se, že máš správnou adresu clusteru z HiveMQ
 const MQTT_HOST = "6b21f01c6a0e4cc08a8ae8d7acbcecb5.s1.eu.hivemq.cloud";
 const MQTT_PORT = 8884;
 const MQTT_USER = "web-client";
@@ -11,13 +12,15 @@ let isDrawing = false;
 const clientID = "web_client_" + new Date().getTime();
 const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, clientID);
 
+// --- START ---
 window.onload = function() {
     connectMQTT();
     createGrid();
+    // Pojistka pro puštění myši mimo okno
     window.addEventListener('mouseup', () => { isDrawing = false; });
 };
 
-// --- MQTT ---
+// --- MQTT PŘIPOJENÍ ---
 function connectMQTT() {
     const options = {
         useSSL: true,
@@ -31,36 +34,39 @@ function connectMQTT() {
 
 function onConnect() {
     console.log("Připojeno k MQTT");
-    const statusEl = document.getElementById("status");
-    if(statusEl) {
-        statusEl.innerText = "Stav: PŘIPOJENO (Online)";
-        statusEl.style.color = "green";
-    }
+    updateStatus("Stav: PŘIPOJENO (Online)", "green");
 }
 
 function onFailure(message) {
     console.log("Chyba: " + message.errorMessage);
+    updateStatus("Stav: CHYBA PŘIPOJENÍ", "red");
+}
+
+function updateStatus(text, color) {
     const statusEl = document.getElementById("status");
     if(statusEl) {
-        statusEl.innerText = "Stav: CHYBA";
-        statusEl.style.color = "red";
+        statusEl.innerText = text;
+        statusEl.style.color = color;
     }
 }
 
+// --- ODESÍLÁNÍ DAT ---
 function sendMqttBinary(topic, buffer) {
     if (!client.isConnected()) return;
+
     const message = new Paho.MQTT.Message(buffer);
     message.destinationName = topic;
     client.send(message);
+    
+    // Zobrazíme v logu
     logToConsole(buffer);
 }
 
-// --- LOGOVÁNÍ ---
+// --- LOGOVÁNÍ (Pro kontrolu indexů) ---
 function logToConsole(payload) {
     const consoleBox = document.getElementById('console-log');
     if (!consoleBox) return;
 
-    // Odstranění placeholderu
     const placeholder = consoleBox.querySelector('.log-placeholder');
     if (placeholder) placeholder.remove();
 
@@ -70,14 +76,11 @@ function logToConsole(payload) {
     let dataDisplay = "";
     if (payload instanceof Uint8Array || payload instanceof ArrayBuffer) {
         const bytes = new Uint8Array(payload);
-        
-        // Zobrazení pole
         dataDisplay = "[" + Array.from(bytes).join(", ") + "]";
         
-        // Rozpoznání typu zprávy podle délky
+        // Pokud jsou to 4 bajty, je to pixel -> ukážeme ID
         if (bytes.length === 4) {
-            // NOVÉ: 4 bajty = [Index, R, G, B]
-            dataDisplay += ` (ID:${bytes[0]} RGB)`;
+            dataDisplay += ` (LED ID:${bytes[0]} | RGB)`;
         } else if (bytes.length === 1 && bytes[0] === 255) {
             dataDisplay += " (CLEAR)";
         }
@@ -96,18 +99,19 @@ function clearLog() {
     consoleBox.innerHTML = '<div class="log-placeholder">Log vymazán...</div>';
 }
 
-// --- MŘÍŽKA ---
+// --- MŘÍŽKA A VÝPOČTY ---
 function createGrid() {
     const grid = document.getElementById('pixel-grid');
     if (!grid) return; 
     grid.innerHTML = ""; 
 
+    // HTML Grid se generuje shora dolů (row 0 je nahoře)
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const cell = document.createElement('div');
             cell.classList.add('pixel-cell');
             
-            // Logika: 0:0 je vlevo dole
+            // Přepočítáme HTML řádky na tvoje souřadnice (0:0 dole)
             const targetX = col;
             const targetY = 7 - row;
 
@@ -137,9 +141,10 @@ function paintCell(cell) {
     const x = parseInt(cell.dataset.x);
     const y = parseInt(cell.dataset.y);
 
-    // --- NOVÝ VÝPOČET INDEXU ---
-    // Sloupec 0 (dole->nahoru) je 0..7
-    // Sloupec 1 (dole->nahoru) je 8..15
+    // --- VÝPOČET INDEXU LEDKY ---
+    // Sloupce jdou zdola nahoru.
+    // 1. sloupec (x=0) jsou indexy 0-7
+    // 2. sloupec (x=1) jsou indexy 8-15
     const index = (x * 8) + y;
 
     // Posíláme 4 bajty: [Index, R, G, B]
@@ -149,11 +154,14 @@ function paintCell(cell) {
 }
 
 function clearGrid() {
+    // Příkaz CLEAR zůstává jako jeden bajt 255
     const payload = new Uint8Array([255]);
+    
     const cells = document.querySelectorAll('.pixel-cell');
     cells.forEach(cell => {
         cell.style.backgroundColor = '#eee';
     });
+    
     sendMqttBinary(MQTT_TOPIC_GRID, payload);
 }
 
